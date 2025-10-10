@@ -26,6 +26,8 @@ using System.IO;
 using System.Linq;
 using System.Windows.Input;
 using System.Windows.Threading;
+using System.Runtime.InteropServices;
+using System.Windows;
 using dnSpy.Contracts.App;
 using dnSpy.Contracts.Controls;
 using dnSpy.Contracts.Documents;
@@ -336,6 +338,28 @@ namespace dnSpy.Documents.Tabs {
 			}
 			catch (Win32Exception) {
 			}
+		}
+	}
+
+	[ExportMenuItem(OwnerGuid = MenuConstants.APP_MENU_FILE_GUID, Header = "Copy Assembly Explorer File Paths", Group = MenuConstants.GROUP_APP_MENU_FILE_OPEN, Order = 110)]
+	sealed class CopyAllAssemblyPathsCommand : MenuItemBase {
+		readonly IDocumentTreeView documentTreeView;
+
+		[ImportingConstructor]
+		CopyAllAssemblyPathsCommand(IDocumentTreeView documentTreeView) => this.documentTreeView = documentTreeView;
+
+		public override bool IsEnabled(IMenuItemContext context) => documentTreeView.DocumentService.GetDocuments().Length > 0;
+
+		public override void Execute(IMenuItemContext context) {
+			var docs = documentTreeView.DocumentService.GetDocuments();
+			var paths = docs.Select(d => d.Filename).Where(p => !string.IsNullOrEmpty(p)).ToArray();
+			if (paths.Length == 0)
+				return;
+			var s = string.Join(Environment.NewLine, paths);
+			try {
+				Clipboard.SetText(s);
+			}
+			catch (ExternalException) { }
 		}
 	}
 }
